@@ -1,0 +1,167 @@
+openapi: 3.0.3
+info:
+  title: Padron Electoral API
+  version: 1.0.0
+  description: API del Proyecto Final de Base de Datos I. Simulacion academica, solo datos ficticios.
+servers:
+  - url: http://localhost:8080
+paths:
+  /api/catalogos:
+    get:
+      summary: Catalogos para los formularios
+      responses:
+        '200':
+          description: Catalogos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Catalogos'
+  /api/captcha:
+    get:
+      summary: Genera un codigo de verificacion (un solo uso, vigencia de 5 minutos)
+      responses:
+        '200':
+          description: Token e imagen (data URL PNG)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Captcha'
+  /api/empadronamientos:
+    post:
+      summary: Registrar un nuevo empadronamiento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistroRequest'
+      responses:
+        '201':
+          description: Registro creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistroResponse'
+        '400':
+          description: Dato invalido o regla de negocio violada (mensaje claro para el usuario)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensaje'
+  /api/consulta:
+    post:
+      summary: Consultar si un ciudadano esta empadronado
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsultaRequest'
+      responses:
+        '200':
+          description: Ciudadano empadronado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Empadronado'
+        '400':
+          description: Datos invalidos o codigo de verificacion incorrecto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensaje'
+        '404':
+          description: Sin coincidencia (mensaje generico, no revela datos de nadie)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensaje'
+components:
+  schemas:
+    Opcion:
+      type: object
+      properties:
+        id: { type: integer }
+        nombre: { type: string }
+    LugarVotacion:
+      type: object
+      properties:
+        id: { type: integer }
+        nombre: { type: string }
+        idMunicipio: { type: integer }
+    Catalogos:
+      type: object
+      properties:
+        municipios:
+          type: array
+          items: { $ref: '#/components/schemas/Opcion' }
+        generos:
+          type: array
+          items: { $ref: '#/components/schemas/Opcion' }
+        lugaresVotacion:
+          type: array
+          items: { $ref: '#/components/schemas/LugarVotacion' }
+        condicionesAfiliado:
+          type: array
+          items: { $ref: '#/components/schemas/Opcion' }
+    Captcha:
+      type: object
+      properties:
+        token: { type: string }
+        imagen: { type: string, example: 'data:image/png;base64,...' }
+    Mensaje:
+      type: object
+      properties:
+        mensaje: { type: string }
+    RegistroRequest:
+      type: object
+      required: [cui, fechaEmisionDpi, fechaNacimiento, primerNombre, primerApellido, idGenero, leeEscribe, vidente, idMunicipioVecindad, idMunicipioResidencia, tieneDirGeoelectoral, idLugarVotacion, idCondicionAfiliado]
+      properties:
+        cui: { type: string, minLength: 13, maxLength: 13, example: '1234567890101' }
+        fechaEmisionDpi: { type: string, format: date, example: '2024-03-01' }
+        fechaNacimiento: { type: string, format: date, example: '2000-05-20' }
+        primerNombre: { type: string }
+        segundoNombre: { type: string }
+        primerApellido: { type: string }
+        segundoApellido: { type: string }
+        idGenero: { type: integer }
+        leeEscribe: { type: string, enum: ['SI', 'NO'] }
+        vidente: { type: string, enum: ['SI', 'NO'] }
+        idMunicipioVecindad: { type: integer }
+        idMunicipioResidencia: { type: integer }
+        tieneDirGeoelectoral: { type: string, enum: ['SI', 'NO'] }
+        idLugarVotacion: { type: integer }
+        idCondicionAfiliado: { type: integer }
+    RegistroResponse:
+      type: object
+      properties:
+        noEmpadronamiento: { type: string, minLength: 10, maxLength: 10 }
+        mensaje: { type: string }
+    ConsultaRequest:
+      type: object
+      required: [tipoDocumento, numero, fechaNacimiento, captchaToken, captchaCodigo]
+      properties:
+        tipoDocumento: { type: string, enum: [EMPADRONAMIENTO, DPI] }
+        numero: { type: string }
+        fechaNacimiento: { type: string, example: '15/03/1985', description: 'Formato DD/MM/AAAA' }
+        captchaToken: { type: string }
+        captchaCodigo: { type: string }
+    Empadronado:
+      type: object
+      description: Las llaves coinciden con las columnas de sp_consultar_empadronado
+      properties:
+        estado: { type: string }
+        no_empadronamiento: { type: string }
+        cui: { type: string }
+        fecha_emision_dpi: { type: string, example: '01/03/2024' }
+        nombre_completo: { type: string }
+        genero: { type: string }
+        lee_escribe: { type: string }
+        vidente: { type: string }
+        departamento_vecindad: { type: string }
+        municipio_vecindad: { type: string }
+        departamento_residencia: { type: string }
+        municipio_residencia: { type: string }
+        tiene_dir_geoelectoral: { type: string }
+        lugar_votacion: { type: string }
+        condicion_afiliado: { type: string }
